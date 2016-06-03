@@ -1,0 +1,147 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="UTF-8"/>
+        <title>VisualHash</title>
+        <script type="text/javascript" src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+        <style>
+            body {
+                background-color: #222229;
+            }
+            input {
+                width: 200px;
+                padding: 4px;
+                line-height: 25px;
+                border: 1px solid #CCC;
+            }
+        </style>
+    </head>
+    <body>
+        <input id="example"/>
+        <script type="text/javascript">
+            function box_Hash($input, bytes, options) {
+                options = jQuery.extend({ 'distance': 2, 'border': 1 }, options);
+
+                var $box = jQuery('<label></label>').css({
+                    'top':              $input.position().top  + (- options.distance),
+                    'left':             $input.position().left + (- options.distance),
+                    'width':            $input.outerWidth()    + (options.distance * 2),
+                    'height':           $input.outerHeight()   + (options.distance * 2),
+                    'display':          'block',
+                    'position':         'absolute',
+                    'box-sizing':       'border-box',
+                    'z-index':          -1,
+                    'border-width':     options.border,
+                    'border-color':     'red',
+                    'border-style':     'solid',
+                    'background-color': 'none',
+                });
+
+                $input.before($box);
+
+                return function() {
+                    $box.css({
+                        'border-left-color': '#' + bytes() + bytes() + bytes() + bytes() + bytes() + bytes(),
+                        'border-top-color': '#' + bytes() + bytes() + bytes() + bytes() + bytes() + bytes(),
+                        'border-right-color': '#' + bytes() + bytes() + bytes() + bytes() + bytes() + bytes(),
+                        'border-bottom-color': '#' + bytes() + bytes() + bytes() + bytes() + bytes() + bytes()
+                    });
+
+                }
+            }
+
+            function grid_Hash($input, bytes, options) {
+                options = $.extend({ 'width': 0, 'height': 0, 'margin': 1, 'cubeWidth': 4, 'cubeHeight': 4 }, options);
+
+                var $grid = jQuery('<div></div').css({
+                    'position': 'absolute',
+                    'width':  $input.outerHeight() + (2 * options.margin) + 1,
+                    'height': $input.outerHeight() + (2 * options.margin) + 1,
+                    'box-sizing': 'border-box',
+                    'top': $input.position().top - 1,
+                    'left': $input.position().left + $input.outerWidth() + 10,
+                    'background-color': '#222',
+                    'border': '1px solid #333',
+                    'padding': options.margin + 'px',
+                    'padding-left': '0px'
+                });
+
+                var count = Math.floor($input.outerHeight() / 5);
+
+                for(var i = 0; i < count; ++i) {
+                    for(var j = 0; j < count; ++j) {
+                        $grid.append(jQuery('<div></div>').css({
+                            'width': '4px',
+                            'height': '4px',
+                            'margin-left': options.margin + 'px',
+                            'margin-bottom': options.margin + 'px',
+                            'box-sizing': 'border-box',
+                            'float': 'left'
+                        }));
+                    }
+                }
+
+                $input.after($grid);
+
+                return function() {
+                    var index = parseInt(bytes(), 16);
+
+                    $grid.find('div').each(function(i, elem) {
+                        var color = bytes() + bytes();
+                        var scolr = [
+                            '#0000' + color,
+                            '#00' + color + '00',
+                            '#' + color + '0000'
+                        ][index % 3];
+
+                        $(elem).css({
+                            'background-color': scolr
+                        });
+                    });
+                }
+            }
+
+            (function($) {
+                "use strict";
+
+                $.fn.extend({
+                    visualHash: function(options) {
+                        var $this = $(this);
+
+                        this.option = $.extend({ style: 'box' }, options);
+                        this.hasher = function() {
+                            var hash = 0;
+                            var text = null;
+
+                            return function() {
+                                if($this.val() !== text) {
+                                    hash = 0;
+                                    text = $this.val();
+                                    for(var i = 0, code = 0; i < text.length; ++i) {
+                                        code = text.charCodeAt(i);
+                                        hash = ((hash << 5) - hash) + code;
+                                        hash = hash & hash;
+                                    }
+                                }
+
+                                alert(hash);
+
+                                hash = Math.sin(hash) * 16;
+                                hash = hash - Math.floor(hash);
+                                return Math.abs(Math.floor(hash * 16)).toString(16);
+                            }
+                        };
+
+                        var $this = $(this);
+
+                        /* Render Visualization on Keypress. */
+                        $this.on('keyup', box_Hash($this, this.hasher(), options));
+                        $this.on('keyup', grid_Hash($this, this.hasher(), options));
+                    }
+                });
+            })(jQuery);
+
+            $('#example').visualHash();
+        </script>
+    </body>
+</html>
